@@ -2,7 +2,7 @@ import argparse, os, sys, datetime, glob, importlib, csv
 import numpy as np
 import time
 import torch
-
+torch.cuda.is_available = lambda : False
 import torchvision
 import pytorch_lightning as pl
 
@@ -35,7 +35,7 @@ def load_model_from_config(config, ckpt, verbose=False):
         print("unexpected keys:")
         print(u)
 
-    model.cuda()
+    #model.cuda()
     return model
 
 def get_parser(**parser_kwargs):
@@ -225,12 +225,12 @@ class ConcatDataset(Dataset):
     
 class DataModuleFromConfig(pl.LightningDataModule):
     def __init__(self, batch_size, train=None, reg = None, validation=None, test=None, predict=None,
-                 wrap=False, num_workers=None, shuffle_test_loader=False, use_worker_init_fn=False,
+                 wrap=False, num_workers=os.cpu_count(), shuffle_test_loader=False, use_worker_init_fn=False,
                  shuffle_val_dataloader=False):
         super().__init__()
         self.batch_size = batch_size
         self.dataset_configs = dict()
-        self.num_workers = num_workers if num_workers is not None else batch_size * 2
+        self.num_workers =  os.cpu_count()
         self.use_worker_init_fn = use_worker_init_fn
         if train is not None:
             self.dataset_configs["train"] = train
@@ -272,7 +272,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
         reg_set = self.datasets["reg"]
         concat_dataset = ConcatDataset(train_set, reg_set)
         return DataLoader(concat_dataset, batch_size=self.batch_size,
-                          num_workers=self.num_workers, shuffle=False if is_iterable_dataset else True,
+                          num_workers=os.cpu_count(), shuffle=False if is_iterable_dataset else True,
                           worker_init_fn=init_fn)
 
     def _val_dataloader(self, shuffle=False):
@@ -282,7 +282,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
             init_fn = None
         return DataLoader(self.datasets["validation"],
                           batch_size=self.batch_size,
-                          num_workers=self.num_workers,
+                          num_workers=os.cpu_count(),
                           worker_init_fn=init_fn,
                           shuffle=shuffle)
 
@@ -297,7 +297,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
         shuffle = shuffle and (not is_iterable_dataset)
 
         return DataLoader(self.datasets["test"], batch_size=self.batch_size,
-                          num_workers=self.num_workers, worker_init_fn=init_fn, shuffle=shuffle)
+                          num_workers=os.cpu_count(), worker_init_fn=init_fn, shuffle=shuffle)
 
     def _predict_dataloader(self, shuffle=False):
         if isinstance(self.datasets['predict'], Txt2ImgIterableBaseDataset) or self.use_worker_init_fn:
@@ -305,7 +305,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
         else:
             init_fn = None
         return DataLoader(self.datasets["predict"], batch_size=self.batch_size,
-                          num_workers=self.num_workers, worker_init_fn=init_fn)
+                          num_workers=os.cpu_count(), worker_init_fn=init_fn)
 
 
 class SetupCallback(Callback):
@@ -467,13 +467,14 @@ class CUDACallback(Callback):
     # see https://github.com/SeanNaren/minGPT/blob/master/mingpt/callback.py
     def on_train_epoch_start(self, trainer, pl_module):
         # Reset the memory use counter
-        torch.cuda.reset_peak_memory_stats(trainer.root_gpu)
-        torch.cuda.synchronize(trainer.root_gpu)
+        #torch.cuda.reset_peak_memory_stats(device="cpu")
+        #torch.cuda.synchronize(device="cpu")
         self.start_time = time.time()
 
     def on_train_epoch_end(self, trainer, pl_module):
-        torch.cuda.synchronize(trainer.root_gpu)
-        max_memory = torch.cuda.max_memory_allocated(trainer.root_gpu) / 2 ** 20
+        #torch.cuda.synchronize(device="cpu")
+        #max_memory = torch.cuda.max_memory_allocated(device="cpu") / 2 ** 20
+        max_memory = 31457280 / 2 ** 20
         epoch_time = time.time() - self.start_time
 
         try:
@@ -821,8 +822,8 @@ if __name__ == "__main__":
 
         import signal
 
-        signal.signal(signal.SIGUSR1, melk)
-        signal.signal(signal.SIGUSR2, divein)
+      #  signal.signal(signal.SIGUSR1, melk)
+       # signal.signal(signal.SIGUSR2, divein)
 
         # run
         if opt.train:
