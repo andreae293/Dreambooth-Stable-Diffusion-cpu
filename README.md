@@ -1,5 +1,6 @@
 # Dreambooth on Stable Diffusion. CPU version
-Slight changes were made to make the script work on windows using CPU
+Slight changes were made to make the script work on windows using CPU.
+
 Usage and requirements are the same as the GPU version at https://github.com/XavierXiao/Dreambooth-Stable-Diffusion
 
 Generate regularization images:
