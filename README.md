@@ -27,6 +27,8 @@ a photo of a sks <class>
 
 
 Performance are obviously way slower:
-about 6-7 hours for 500 steps on a ryzen 3900x at 3.6ghz and 48GB of RAM (30-35GB used)
-500 steps are usually enough
-if you haven't enough RAM, you can probably allocate virtual RAM on a SSD but with a huge speed decrease, i haven't tried yet
+about 6-7 hours for 500 steps on a ryzen 3900x at 3.6ghz and 48GB of RAM (30-35GB used).
+
+500 steps are usually enough.
+
+if you haven't enough RAM, you can probably allocate virtual RAM on a SSD but with a huge speed decrease, i haven't tried yet.
